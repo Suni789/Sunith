@@ -1,0 +1,156 @@
+Here’s how you can modify your existing code to scrape the link you mentioned and meet the requirements. I will include proxy handling, ensure at least 200 products are scraped, save the data to CSV, and perform the necessary data analysis.
+
+Step 1: Updated Scraping Code with Proxy Support
+
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import random
+import time
+
+# Define Proxies
+proxies = {
+    "http": "http://your_proxy:port",
+    "https": "https://your_proxy:port",
+}
+
+# User Agents List
+user_agents = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36",
+]
+
+# URL to scrape from
+url = "https://www.noon.com/egypt-en/sports-and-outdoors/exercise-and-fitness/yoga-16328/"
+
+# Define headers
+headers = {
+    "User-Agent": random.choice(user_agents),
+}
+
+# Scraping function
+def scrape_products(url, proxies, headers, pages=10):
+    products = []
+    for page in range(1, pages + 1):
+        print(f"Scraping page {page}...")
+        response = requests.get(f"{url}?page={page}", proxies=proxies, headers=headers)
+        if response.status_code != 200:
+            print(f"Error fetching page {page}: Status code {response.status_code}")
+            continue
+        soup = BeautifulSoup(response.content, "html.parser")
+        
+        # Adjusting this part based on the actual structure of the webpage
+        for item in soup.find_all("div", class_="productContainer"):
+            name = item.find("h3", class_="product-title").text.strip() if item.find("h3", class_="product-title") else "N/A"
+            price = item.find("span", class_="priceNow").text.strip() if item.find("span", class_="priceNow") else "N/A"
+            brand = item.find("a", class_="brandName").text.strip() if item.find("a", class_="brandName") else "N/A"
+            seller = item.find("a", class_="sellerLink").text.strip() if item.find("a", class_="sellerLink") else "N/A"
+
+            products.append({
+                "Name": name,
+                "Price": price,
+                "Brand": brand,
+                "Seller": seller,
+            })
+        time.sleep(1)  # Avoid IP blocking by adding a delay
+    return products
+
+# Scrape products (adjust to get at least 200 products)
+products = scrape_products(url, proxies, headers, pages=10)
+
+# Convert scraped data to DataFrame
+df = pd.DataFrame(products)
+
+# Clean and process the price column for analysis (convert to float)
+df["Price"] = df["Price"].replace({'[^\d.]': ''}, regex=True).astype(float)
+
+# Save to CSV
+df.to_csv("yoga_products_noon.csv", index=False)
+
+# Print basic info
+print(df.head())
+print(f"Number of Products Scraped: {len(df)}")
+
+Step 2: Data Analysis
+
+# Data Analysis
+
+# Find the most expensive product
+most_expensive = df.loc[df["Price"].idxmax()]
+print(f"Most Expensive Product: \n{most_expensive}")
+
+# Find the cheapest product
+cheapest = df.loc[df["Price"].idxmin()]
+print(f"Cheapest Product: \n{cheapest}")
+
+# Count of products by each brand
+brand_count = df["Brand"].value_counts()
+print("Number of products by each brand:")
+print(brand_count)
+
+# Count of products by each seller
+seller_count = df["Seller"].value_counts()
+print("Number of products by each seller:")
+print(seller_count)
+
+# Plot: Number of Products by Brand
+plt.figure(figsize=(10, 6))
+sns.countplot(y="Brand", data=df, order=df["Brand"].value_counts().index)
+plt.title("Number of Products by Each Brand")
+plt.show()
+
+# Plot: Number of Products by Seller
+plt.figure(figsize=(10, 6))
+sns.countplot(y="Seller", data=df, order=df["Seller"].value_counts().index)
+plt.title("Number of Products by Each Seller")
+plt.show()
+
+# Save the plots if necessary
+plt.savefig("brand_distribution.png")
+plt.savefig("seller_distribution.png")
+
+Explanation of Key Updates:
+
+1. Proxies:
+The proxies dictionary is incorporated into the requests.get() method to route the traffic through proxies and avoid potential IP blocks.
+
+
+2. Dynamic User-Agent:
+A random User-Agent is selected from the list to avoid detection as a bot.
+
+
+3. Data Cleaning:
+The price is cleaned using regex to ensure numerical conversion, making it easier to perform analysis like finding the most expensive and cheapest products.
+
+
+4. Error Handling:
+If the website returns a status code other than 200, it skips that page.
+
+
+5. Visualizations:
+Seaborn and Matplotlib are used to visualize the distribution of products by brand and seller. The data is also saved as CSV and graphs can be exported as images.
+
+
+
+Sample Analysis:
+
+Most Expensive Product: This shows the item with the highest price from the scraped data.
+
+Cheapest Product: Shows the least expensive product.
+
+Brand & Seller Distribution: Visualizes the number of products each brand and seller offers, providing insights into market dominance.
+
+
+Output:
+
+A CSV file (yoga_products_noon.csv) containing the scraped data.
+
+Data insights printed in the console.
+
+Visualizations of product distribution by brand and seller.
+
+
+Let me know if you'd like any further adjustments!
+
